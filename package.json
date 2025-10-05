@@ -1,0 +1,16 @@
+{
+  "name": "Tool-Orchestrator-AI",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.18.0",
+  "dependencies": {
+    "openai": "^6.1.0"
+  }
+}
