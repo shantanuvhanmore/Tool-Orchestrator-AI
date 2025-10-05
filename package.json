@@ -1,16 +1,19 @@
 {
   "name": "Tool-Orchestrator-AI",
   "version": "1.0.0",
-  "description": "",
+  "type": "module",
+  "description": "AI Agent with tool orchestration",
   "main": "index.js",
   "scripts": {
-    "dev": "node --watch index.js"
+    "dev": "node --watch index.js",
+    "start": "node index.js"
   },
-  "keywords": [],
+  "keywords": ["ai", "agent", "tool-orchestration"],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.18.0",
   "dependencies": {
+    "dotenv": "^17.2.3",
     "openai": "^6.1.0"
   }
 }

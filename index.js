@@ -1,158 +1,194 @@
 import { exec } from 'child_process';
+import { promisify } from 'util';
 import 'dotenv/config';
 import OpenAI from 'openai';
 import fs from 'fs/promises';
-import http from 'http'; 
+import path from 'path';
 
+const execAsync = promisify(exec);
+
+// Initialize OpenAI client
 const client = new OpenAI({
-  apiKey: process.env.MY_OPENAI_API_KEY 
+  apiKey: process.env.MY_OPENAI_API_KEY
 });
 
+// Tool functions with proper error handling
+const tools = {
+  async readFile(filename) {
+    try {
+      const content = await fs.readFile(filename, 'utf8');
+      return `File content:\n${content}`;
+    } catch (err) {
+      return `Error: Cannot read '${filename}' - ${err.code === 'ENOENT' ? 'File not found' : err.message}`;
+    }
+  },
 
-async function readFile(filename) {
-  try {
-    const content = await fs.readFile(filename, 'utf8');
-    return content;
-  } catch (error) {
-    return `Error reading file: ${error.message}`;
+  async writeFile(args) {
+    try {
+      const { filename, content } = typeof args === 'string' ? JSON.parse(args) : args;
+      await fs.writeFile(filename, content, 'utf8');
+      return `Success: Created '${filename}' (${content.length} bytes)`;
+    } catch (err) {
+      return `Error: Cannot write file - ${err.message}`;
+    }
+  },
+
+  async executeCommand(command) {
+    // Blacklist dangerous commands
+    const blacklist = ['rm', 'del /f', 'format', 'rmdir /s'];
+    if (blacklist.some(cmd => command.toLowerCase().includes(cmd))) {
+      return 'Error: Command blocked for safety';
+    }
+
+    try {
+      const { stdout, stderr } = await execAsync(command, { 
+        timeout: 30000,
+        shell: 'cmd.exe'
+      });
+      return stdout || stderr || 'Command executed';
+    } catch (err) {
+      return `Error: ${err.message}`;
+    }
+  },
+
+  async createDirectory(dirname) {
+    try {
+      await fs.mkdir(dirname, { recursive: true });
+      return `Success: Created directory '${dirname}'`;
+    } catch (err) {
+      return `Error: Cannot create directory - ${err.message}`;
+    }
   }
-}
-
-function executeCommand(command) {
-  return new Promise((resolve, reject) => {
-    exec(command, (err, stdout, stderr) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve(`stdout: ${stdout}\nstderr: ${stderr}`);
-    });
-  });
-}
-
-function getWeatherInfo(cityname) {
-  return `${cityname} has 32 Degree C`;
 };
 
-const TOOLS_MAP = {
-  getWeatherInfo: getWeatherInfo,
-  executeCommand: executeCommand,
-  readFile: readFile 
-};
+// Concise system prompt
+const SYSTEM_PROMPT = `You are an AI agent. Follow this workflow: THINK → ACTION → OBSERVE → OUTPUT
 
-const SYSTEM_PROMPT = `You are an AI assistant that operates in steps: START → THINK → ACTION → OBSERVE → OUTPUT.
+TOOLS:
+- readFile(filename) - Read file contents
+- writeFile({filename, content}) - Write content to file (use JSON format)
+- executeCommand(cmd) - Run Windows commands (use PowerShell syntax for multi-line)
+- createDirectory(name) - Create folder
 
-ENVIRONMENT: Windows OS
+RULES:
+1. Output ONLY valid JSON: {"step": "THINK|ACTION|OUTPUT", "tool": "name", "input": "value", "content": "text"}
+2. For ACTION step, always include "tool" and "input"
+3. For multi-line file content, use writeFile tool instead of echo
+4. Use PowerShell commands when needed (e.g., New-Item, Set-Content)
+5. Think before each action
 
-Available Tools:
-- getWeatherInfo(city)
-- executeCommand(windows_commands_only)
-- readFile(filename)
+EXAMPLE:
+User: "Create hello.txt with 'Hello World'"
+{"step": "THINK", "content": "Need to create file. Use writeFile tool."}
+{"step": "ACTION", "tool": "writeFile", "input": "{\\"filename\\": \\"hello.txt\\", \\"content\\": \\"Hello World\\"}", "content": "Creating file"}
+(System provides OBSERVE)
+{"step": "OUTPUT", "content": "Created hello.txt successfully"}`;
 
-Rules:
-• Output only JSON format shown below
-• One step per response
-• Wait for OBSERVE before next step
-
-Output Format:
-{"step": "THINK|ACTION|OUTPUT", "tool": "tool_name", "input": "parameter", "content": "text"}
-
-Examples:
-
-START: What is weather of Pune?
-{"step": "THINK", "content": "User wants Pune weather. Use getWeatherInfo tool."}
-{"step": "ACTION", "tool": "getWeatherInfo", "input": "Pune", "content": "Getting weather data"}
-{"step": "OBSERVE", "content": "32 Degree C"}
-{"step": "THINK", "content": "Weather is 32°C. Now provide final answer."}
-{"step": "OUTPUT", "content": "Pune weather is 32°C - very hot!"}
-
-START: Create a todo list app
-{"step": "THINK", "content": "User wants a todo app. Need to create files and structure."}
-{"step": "THINK", "content": "First, check current directory contents."}
-{"step": "ACTION", "tool": "executeCommand", "input": "dir", "content": "Listing files"}
-{"step": "OBSERVE", "content": "file1.txt, file2.js"}
-{"step": "THINK", "content": "Now create HTML, CSS, JS files for todo app."}
-{"step": "ACTION", "tool": "executeCommand", "input": "type nul > todo.html", "content": "Creating HTML file"}
-{"step": "OBSERVE", "content": "File created"}
-{"step": "ACTION", "tool": "executeCommand", "input": "echo '<html>todo app</html>' > todo.html", "content": "Adding basic HTML structure"}
-{"step": "THINK", "content": "Files created. Now provide instructions."}
-{"step": "OUTPUT", "content": "Todo app files created. Open todo.html to start."}
-`;
-
-async function init() {
+// Main agent loop
+async function runAgent(query) {
   const messages = [
-    { role: 'system', content: SYSTEM_PROMPT }
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: query }
   ];
 
-  const user_query = "what is inside my package.json file?";
-  messages.push({ role: 'user', content: user_query });
+  let step = 0;
+  const maxSteps = 30;
 
-  let stepCount = 0;
-  const maxSteps = 5; // Prevent infinite loops
+  console.log(`\n🚀 Query: ${query}\n`);
 
-  while (stepCount < maxSteps) {
-    stepCount++;
-    
+  while (step < maxSteps) {
+    step++;
+
     try {
+      // Call OpenAI API
       const response = await client.chat.completions.create({
         model: 'gpt-4o-mini',
-        messages: messages,
-        response_format: { type: "json_object" }  // This forces JSON output
+        messages,
+        response_format: { type: 'json_object' },
+        temperature: 0.7
       });
 
-      const assistantResponse = response.choices[0].message.content;
-      messages.push({ role: 'assistant', content: assistantResponse });
-      
-      console.log('Raw response:', assistantResponse);
-      
-      const parsed_response = JSON.parse(assistantResponse);
+      const raw = response.choices[0].message.content;
+      messages.push({ role: 'assistant', content: raw });
 
-      if (parsed_response.step === 'THINK') {
-        console.log(`🧠 THINK: ${parsed_response.content}`);
-        continue;
+      // Parse response
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        console.error('❌ Invalid JSON from AI:', raw);
+        break;
       }
-      
-      if (parsed_response.step === 'OUTPUT') {
-        console.log(`🤖 OUTPUT: ${parsed_response.content}`);
-        break; // Exit loop when output is reached
-      }
-      
-      if (parsed_response.step === 'ACTION') {
-        const tool_name = parsed_response.tool;
-        const tool_input = parsed_response.input;
 
-        if (TOOLS_MAP[tool_name]) {
-          console.log(`🔨 ACTION: Calling ${tool_name} with input: ${tool_input}`);
-          const value = await TOOLS_MAP[tool_name](tool_input);
-          console.log(`👀 OBSERVE: ${value}`);
-          messages.push({ 
-            role: 'user', 
-            content: JSON.stringify({ 
-              step: 'OBSERVE', 
-              content: value 
-            }) 
-          });
-        } else {
-          console.log(`❌ ERROR: Tool ${tool_name} not found`);
-          messages.push({
-            role: 'user',
-            content: JSON.stringify({
-              step: 'OBSERVE',
-              content: `Error: Tool ${tool_name} not available`
-            })
-          });
-        }
-        continue;
+      const { step: stepType, tool, input, content } = parsed;
+
+      // Handle different step types
+      switch (stepType) {
+        case 'THINK':
+          console.log(`🧠 ${content}`);
+          break;
+
+        case 'ACTION':
+          if (!tool || !tools[tool]) {
+            console.log(`❌ Unknown tool: ${tool}`);
+            messages.push({
+              role: 'user',
+              content: JSON.stringify({ step: 'OBSERVE', content: `Error: Tool '${tool}' not found` })
+            });
+            break;
+          }
+
+          console.log(`🔧 ${tool}(${typeof input === 'string' ? input.substring(0, 50) : JSON.stringify(input).substring(0, 50)}...)`);
+          
+          try {
+            const result = await tools[tool](input);
+            console.log(`✓ ${result}`);
+            messages.push({
+              role: 'user',
+              content: JSON.stringify({ step: 'OBSERVE', content: result })
+            });
+          } catch (err) {
+            const errorMsg = `Tool error: ${err.message}`;
+            console.log(`❌ ${errorMsg}`);
+            messages.push({
+              role: 'user',
+              content: JSON.stringify({ step: 'OBSERVE', content: errorMsg })
+            });
+          }
+          break;
+
+        case 'OUTPUT':
+          console.log(`\n✅ Result: ${content}\n`);
+          return content;
+
+        default:
+          console.log(`⚠️ Unknown step: ${stepType}`);
       }
-      
-    } catch (error) {
-      console.error('Error in loop:', error.message);
+
+    } catch (err) {
+      console.error(`\n💥 Fatal error: ${err.message}\n`);
+      if (err.code === 'insufficient_quota') {
+        console.error('OpenAI API quota exceeded. Check your billing.');
+      }
       break;
     }
   }
-  
-  if (stepCount >= maxSteps) {
-    console.log('🛑 Maximum steps reached');
+
+  if (step >= maxSteps) {
+    console.log('\n⚠️ Max steps reached\n');
   }
 }
 
-init();
+// Entry point
+async function main() {
+  const query = process.argv[2] || "make a simple todo app using javascript html css in the folder named todoapp. Use writeFile tool for all file content.";
+  
+  try {
+    await runAgent(query);
+  } catch (err) {
+    console.error('❌ Application error:', err.message);
+    process.exit(1);
+  }
+}
+
+main();

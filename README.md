@@ -1,213 +1,243 @@
-# 🌟 AI Agent Workflow Engine
+```markdown
+# 🤖 Tool-Orchestrator-AI
 
-A powerful Node.js-based AI agent that executes complex tasks through a structured workflow system using OpenAI's GPT models.
+> An intelligent AI agent that automates coding tasks through natural language - inspired by Cursor AI
 
 ![Node.js](https://img.shields.io/badge/Node.js-18+-green)
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-blue)
 ![License](https://img.shields.io/badge/License-ISC-yellow)
 
-## 🚀 Overview
+## 📖 Overview
 
-The **AI Agent Workflow Engine** is an intelligent assistant that breaks down complex tasks into manageable steps using a structured **START → THINK → ACTION → OBSERVE → OUTPUT** workflow. It can execute commands, read files, process data, and make decisions autonomously.
+**Tool-Orchestrator-AI** is a lightweight AI agent that understands your development requests and executes them autonomously. It breaks down complex tasks into structured workflows using the **THINK → ACTION → OBSERVE → OUTPUT** pattern, making it perfect for rapid prototyping and automation.
 
-## ✨ Features
+### ✨ Features
 
-- **🤖 Intelligent Task Breakdown** - Complex tasks are decomposed into logical steps
-- **🛠️ Tool Ecosystem** - Execute commands, read files, and process data
-- **🔒 Safe Execution** - Windows-compatible command execution with error handling
-- **📁 File Operations** - Read and analyze project files
-- **🌤️ Weather Data** - Built-in weather information tool
-- **🔄 Real-time Observation** - Continuous learning from tool outputs
-- **🎯 JSON-First Communication** - Structured responses for reliable parsing
+- 🧠 **Smart Task Planning** - Automatically decomposes complex requests into executable steps
+- 🛠️ **Tool Ecosystem** - File operations, command execution, and directory management
+- 🔒 **Safety First** - Command blacklisting and error handling for secure execution
+- ⚡ **Fast Prototyping** - Create full web apps, scripts, and projects from natural language
+- 🎯 **Windows Optimized** - Native PowerShell and CMD integration
 
-## 🏗️ Architecture
+## 🚀 Quick Start
 
-```
-User Query
-    ↓
-START Phase
-    ↓
-THINK Process (Multiple iterations)
-    ↓
-ACTION (Tool Execution)
-    ↓
-OBSERVE (Result Analysis)
-    ↓
-OUTPUT (Final Response)
-```
+### 📋 Prerequisites
 
-## 🛠️ Installation
+- Node.js 18 or higher
+- pnpm (or npm/yarn)
+- OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
+
+### 🔧 Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ai-agent-workflow-engine.git
-
-# Navigate to project
-cd ai-agent-workflow-engine
+git clone https://github.com/yourusername/Tool-Orchestrator-AI.git
+cd Tool-Orchestrator-AI
 
 # Install dependencies
 pnpm install
 
-# Set up environment variables
-cp .env.example .env
+# Create .env file
+echo MY_OPENAI_API_KEY=your_api_key_here > .env
 ```
+
+## 💻 Usage
+
+### 🎯 Basic Usage
+
+```bash
+# Run with default query (creates a todo app)
+pnpm dev
+
+# Or using start script
+pnpm start
+```
+
+### 🔍 Custom Queries
+
+```bash
+# Create a calculator app
+node index.js "create a calculator app"
+
+# Generate a REST API server
+node index.js "build an express server with user routes"
+
+# Analyze project files
+node index.js "read package.json and list all dependencies"
+
+# Create multiple files
+node index.js "create a landing page with index.html, styles.css, and script.js"
+```
+
+### 🚀 Advanced Examples
+
+#### Example 1: Full Web Application
+```bash
+node index.js "Create a weather dashboard app in 'weather-app' folder with HTML, CSS, and vanilla JavaScript. Include a search bar and card-based layout."
+```
+
+#### Example 2: Project Setup
+```bash
+node index.js "Initialize a React project structure with components, utils, and styles folders. Create a basic App.js and index.html."
+```
+
+#### Example 3: File Operations
+```bash
+node index.js "Read all .js files in the current directory and create a summary.txt with their names and line counts"
+```
+
+## 🔧 Available Tools
+
+The agent has access to these built-in tools:
+
+| Tool | Description | Example Input |
+|------|-------------|---------------|
+| `readFile` | Read file contents | `"package.json"` |
+| `writeFile` | Create/overwrite files | `{"filename": "app.js", "content": "console.log('hi')"}` |
+| `executeCommand` | Run shell commands | `"dir"` or `"Get-ChildItem"` |
+| `createDirectory` | Create folders | `"my-project"` |
+
+## 🎯 How It Works
+
+```
+User Query → AI Agent → THINK (Plan) → ACTION (Execute Tool) → OBSERVE (Check Result) → OUTPUT (Final Response)
+```
+
+1. **🧠 THINK**: Agent analyzes the request and plans the next step
+2. **🔧 ACTION**: Executes a tool (file operation, command, etc.)
+3. **👀 OBSERVE**: Receives tool output and evaluates success
+4. **🤖 OUTPUT**: Provides final result or continues the loop
 
 ## ⚙️ Configuration
 
-Create a `.env` file with your OpenAI API key:
+### 🔑 Environment Variables
+
+Create a `.env` file in the project root:
 
 ```env
-MY_OPENAI_API_KEY=your_openai_api_key_here
+MY_OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxx
 ```
 
-## 🎯 Quick Start
+### 📝 Modify System Prompt
+
+Edit the `SYSTEM_PROMPT` constant in `index.js` to customize agent behavior:
 
 ```javascript
-import { init } from './index.js';
-
-// Start the AI agent with your query
-await init("Create a todo list application");
+const SYSTEM_PROMPT = `Your custom instructions here...`;
 ```
 
-## 📚 Available Tools
-
-### 🔧 `executeCommand(command)`
-Execute Windows commands safely
-```javascript
-// Example: List directory contents
-executeCommand("dir")
-```
-
-### 📄 `readFile(filename)`
-Read and analyze file contents
-```javascript
-// Example: Read package.json
-readFile("package.json")
-```
-
-### 🌤️ `getWeatherInfo(city)`
-Get weather information for any city
-```javascript
-// Example: Check weather
-getWeatherInfo("London")
-```
-
-## 🎪 Usage Examples
-
-### Example 1: File Analysis
-```javascript
-"what is inside my package.json file?"
-```
-**Workflow:**
-1. 🧠 THINK: "User wants package.json contents"
-2. 🔨 ACTION: readFile("package.json")
-3. 👀 OBSERVE: File content retrieved
-4. 🤖 OUTPUT: Structured analysis of package.json
-
-### Example 2: Project Setup
-```javascript
-"Create a React application with basic components"
-```
-**Workflow:**
-1. 🧠 THINK: "User wants React app setup"
-2. 🔨 ACTION: executeCommand("npx create-react-app my-app")
-3. 👀 OBSERVE: React app created successfully
-4. 🔨 ACTION: executeCommand("cd my-app && dir")
-5. 🤖 OUTPUT: Project structure and next steps
-
-### Example 3: Weather Query
-```javascript
-"What's the weather in Tokyo?"
-```
-**Workflow:**
-1. 🧠 THINK: "User wants Tokyo weather"
-2. 🔨 ACTION: getWeatherInfo("Tokyo")
-3. 👀 OBSERVE: "Tokyo has 22 Degree C"
-4. 🤖 OUTPUT: "Tokyo weather is 22°C - pleasant conditions"
-
-## 🏗️ Project Structure
-
-```
-ai-agent-workflow-engine/
-├── index.js              # Main application logic
-├── package.json          # Project dependencies
-├── .env                  # Environment variables
-├── .gitignore           # Git ignore rules
-└── README.md            # Project documentation
-```
-
-## 🚀 Advanced Usage
-
-### Custom Tool Integration
-Add your own tools to the `TOOLS_MAP`:
+### ⚡ Adjust Parameters
 
 ```javascript
-const TOOLS_MAP = {
-  getWeatherInfo: getWeatherInfo,
-  executeCommand: executeCommand,
-  readFile: readFile,
-  // Add your custom tools here
-  myCustomTool: (param) => { /* your logic */ }
-};
-```
-
-### Workflow Customization
-Modify the system prompt to change the agent's behavior:
-
-```javascript
-const SYSTEM_PROMPT = `Your custom instructions...
-Available Tools: [your tool descriptions]
-Output Format: [your preferred format]`;
-```
-
-## 🔧 Development
-
-```bash
-# Run in development mode with file watching
-pnpm dev
-
-# Run once
-node index.js
+// In runAgent function
+const maxSteps = 30; // Maximum workflow iterations
+const model = 'gpt-4o-mini'; // OpenAI model
+const temperature = 0.7; // Creativity level (0-1)
 ```
 
 ## 🛡️ Safety Features
 
-- ✅ Command validation and error handling
-- ✅ Secure environment variable management
-- ✅ Windows command compatibility
-- ✅ Loop prevention with step limits
-- ✅ JSON schema validation for responses
+- **🛑 Command Blacklist**: Blocks destructive commands (`rm`, `del /f`, `format`)
+- **⏱️ Timeout Protection**: 30-second limit on command execution
+- **🛟 Error Isolation**: Try-catch blocks prevent crashes
+- **📁 File Path Validation**: Prevents unauthorized file access
 
-## 🌟 Use Cases
+## 📊 Example Output
 
-- **🔄 Automated Project Setup** - Initialize applications and dependencies
-- **📊 Code Analysis** - Examine and understand codebases
-- **🔍 File System Exploration** - Navigate and analyze project structures
-- **🌤️ Data Processing** - Handle various data types and formats
-- **🤖 Intelligent Assistance** - Complex problem-solving with step-by-step reasoning
+```
+🚀 Query: create a calculator app
 
-## 🤝 Contributing
+🧠 User wants a calculator app. I'll create HTML, CSS, and JS files in a 'calculator' folder.
+🔧 createDirectory(calculator)
+✓ Success: Created directory 'calculator'
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+🔧 writeFile({"filename": "calculator/index.html", "content": "<!DOCTYPE html>..."})
+✓ Success: Created 'calculator/index.html' (1247 bytes)
+
+🔧 writeFile({"filename": "calculator/styles.css", "content": "body { font-family: Arial; }"})
+✓ Success: Created 'calculator/styles.css' (523 bytes)
+
+✅ Result: Calculator app created successfully in 'calculator' folder with index.html, styles.css, and app.js
+```
+
+## 🐛 Troubleshooting
+
+### 🔍 Common Issues
+
+**Module Warning**
+- ✅ Fixed: Added `"type": "module"` to package.json
+
+**Echo Command Error (Multi-line Content)**
+- ✅ Fixed: Use `writeFile` tool instead of `echo` commands
+
+**OpenAI API Errors**
+```bash
+# Check API key
+echo $env:MY_OPENAI_API_KEY # PowerShell
+echo %MY_OPENAI_API_KEY% # CMD
+
+# Verify quota at https://platform.openai.com/usage
+```
+
+**Command Execution Fails**
+- Ensure you're using Windows-compatible commands
+- Use PowerShell syntax for complex operations: `New-Item`, `Set-Content`
+
+## 📝 Development
+
+### 🔄 Watch Mode
+```bash
+# Auto-restart on file changes
+pnpm dev
+```
+
+### 🛠️ Add New Tools
+
+```javascript
+const tools = {
+  async yourTool(input) {
+    try {
+      // Your tool logic
+      return `Success: ${result}`;
+    } catch (err) {
+      return `Error: ${err.message}`;
+    }
+  }
+};
+```
+
+Update the system prompt to include the new tool description.
+
+## 🗺️ Roadmap
+
+- [ ] Add support for API integrations (REST, GraphQL)
+- [ ] Multi-file context awareness
+- [ ] Interactive mode with user confirmation
+- [ ] Docker container support
+- [ ] Plugin system for custom tools
+- [ ] Web UI for easier interaction
 
 ## 📄 License
 
-This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
+ISC License - See LICENSE file for details
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-tool`)
+3. Commit changes (`git commit -m 'Add amazing tool'`)
+4. Push to branch (`git push origin feature/amazing-tool`)
+5. Open a Pull Request
 
 ## 🙏 Acknowledgments
 
-- Built with [OpenAI GPT](https://openai.com/)
-- Node.js runtime environment
-- Windows command line integration
+- Inspired by [Cursor AI](https://cursor.sh)
+- Built with [OpenAI GPT-4o-mini](https://openai.com)
+- Uses [pnpm](https://pnpm.io) for efficient package management
 
 ---
 
-**⭐ Star this repo if you find it helpful!**
-
-**🐛 Found an issue?** Open a ticket in the [issue tracker](https://github.com/yourusername/ai-agent-workflow-engine/issues).
-
-**💡 Have an idea?** We'd love to hear your suggestions!
-
----
-
-*Built with ❤️ using AI-powered workflow automation*
+**Made with ❤️ by developers, for developers**
+```
