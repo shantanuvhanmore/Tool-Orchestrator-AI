@@ -1,4 +1,3 @@
-```markdown
 # 🤖 Tool-Orchestrator-AI
 
 > An intelligent AI agent that automates coding tasks through natural language - inspired by Cursor AI
